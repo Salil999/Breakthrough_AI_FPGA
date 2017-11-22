@@ -1,7 +1,7 @@
 #ifndef MINIMAX_H
 #define MINIMAX_H
 
-#include <time.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -11,7 +11,6 @@
 #define WHITE 0
 #define BLACK 1
 #define MAX_DEPTH 2
-#define INFINITY 9999999
 #define TRUE 1
 #define FALSE -1
 
@@ -38,7 +37,7 @@ typedef struct maze_struct maze_struct;
 // struct that acts as the return value from our alpha-beta functions
 struct alpha_beta
 {
-    int heuristic;
+    float heuristic;
     pos current;
     pos move;
 };
@@ -51,14 +50,14 @@ void print_maze(maze_struct* maze);
 void run_game(maze_struct* maze);
 alpha_beta alpha_beta_max(int depth, pos piece, int alpha, int beta, maze_struct* maze);
 alpha_beta alpha_beta_min(int depth, pos piece, int alpha, int beta, maze_struct* maze);
-int defensive_heuristic(int own_pieces);
-int offensive_heuristic(int opponent_pieces);
+float defensive_heuristic(int own_pieces);
+float offensive_heuristic(int opponent_pieces);
 int utility(maze_struct* maze);
 int count_alive_pieces(pos pieces[16]);
 int in_bounds(pos position);
 void possible_actions(pos position, pos moves[3], maze_struct* maze);
 void save_board(char** backup, maze_struct* maze);
 void restore_board(char** backup, maze_struct* maze);
-
+float get_random_number();
 
 #endif

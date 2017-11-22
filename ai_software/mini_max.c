@@ -2,6 +2,13 @@
 #include "vec.h"
 
 
+float get_random_number()
+{
+    int random_number = arc4random();
+    return fabs((random_number % 1000) / 1000.0);
+}
+
+
 void restore_board(char** backup, maze_struct* maze)
 {
     int i, j;
@@ -33,7 +40,6 @@ void save_board(char** backup, maze_struct* maze)
         }
     }
 }
-
 
 
 void possible_actions(pos position, pos moves[3], maze_struct* maze)
@@ -144,29 +150,28 @@ int utility(maze_struct* maze)
 
 
 // an offensive heuristic that AI will use
-int offensive_heuristic(int opponent_pieces)
+float offensive_heuristic(int opponent_pieces)
 {
-    // return 2 * (30 - opponent_pieces) + random();
-    return 0;
+    return 2 * (30 - opponent_pieces) + get_random_number();
 }
 
 
 // a defensive heuristic that AI will use
-int defensive_heuristic(int own_pieces)
+float defensive_heuristic(int own_pieces)
 {
-    // return 2 * own_pieces + random();
-    return 0;
+    return 2 * own_pieces + get_random_number();
 }
 
 
 alpha_beta alpha_beta_max(int depth, pos piece, int alpha, int beta, maze_struct* maze)
 {
-    int i, j;
+    int i, j, k, l;
     int pieces_length;
     pos move;
     pos* pieces;
     pos possible_moves[3];
-    char** backup;
+    // char** backup;
+    char backup[8][8];
 
     alpha_beta ret_val, temp;
     pos base_position; base_position.x = 0; base_position.y = 0;
@@ -209,13 +214,20 @@ alpha_beta alpha_beta_max(int depth, pos piece, int alpha, int beta, maze_struct
 
     for (i = 0; i < pieces_length; ++i)
     {
-        // pieces[i]
         possible_actions(pieces[i], possible_moves, maze);
         for (j = 0; j < 3; ++j)
         {
-            // possible_moves[j]
             move = possible_moves[j];
-            save_board(backup, maze);
+
+            // backup the current game state
+            for (k = 0; k < 8; ++k)
+            {
+                for (l = 0; l < 8; ++l)
+                {
+                    backup[k][l] = maze->array[k][l];
+                }
+            }
+            // save_board(backup, maze);
 
             // recurse
             temp = alpha_beta_min(depth + 1, pieces[i], alpha, beta, maze);
@@ -226,8 +238,16 @@ alpha_beta alpha_beta_max(int depth, pos piece, int alpha, int beta, maze_struct
                 ret_val.current = pieces[i]; ret_val.move = possible_moves[j];
             }
 
+            for (k = 0; k < 8; ++k)
+            {
+                for (l = 0; l < 8; ++l)
+                {
+                    maze->array[k][l] = backup[k][l];
+                }
+            }
             // restore the original game state
-            restore_board(backup, maze);
+
+            // restore_board(backup, maze);
 
             if (ret_val.heuristic >= beta)
             {
@@ -243,12 +263,13 @@ alpha_beta alpha_beta_max(int depth, pos piece, int alpha, int beta, maze_struct
 
 alpha_beta alpha_beta_min(int depth, pos piece, int alpha, int beta, maze_struct* maze)
 {
-    int i, j;
+    int i, j, k, l;
     int pieces_length;
     pos move;
     pos* pieces;
     pos possible_moves[3];
-    char** backup;
+    // char** backup;
+    char backup[8][8];
 
     alpha_beta ret_val, temp;
     pos base_position; base_position.x = 0; base_position.y = 0;
@@ -291,13 +312,20 @@ alpha_beta alpha_beta_min(int depth, pos piece, int alpha, int beta, maze_struct
 
     for (i = 0; i < pieces_length; ++i)
     {
-        // pieces[i]
         possible_actions(pieces[i], possible_moves, maze);
         for (j = 0; j < 3; ++j)
         {
-            // possible_moves[j]
             move = possible_moves[j];
-            save_board(backup, maze);
+
+            // save the current game state
+            for (k = 0; k < 8; ++k)
+            {
+                for (l = 0; l < 8; ++l)
+                {
+                    backup[k][l] = maze->array[k][l];
+                }
+            }
+            // save_board(backup, maze);
 
             // recurse
             temp = alpha_beta_max(depth + 1, pieces[i], alpha, beta, maze);
@@ -309,7 +337,14 @@ alpha_beta alpha_beta_min(int depth, pos piece, int alpha, int beta, maze_struct
             }
 
             // restore the original game state
-            restore_board(backup, maze);
+            for (k = 0; k < 8; ++k)
+            {
+                for (l = 0; l < 8; ++l)
+                {
+                    backup[k][l] = maze->array[k][l];
+                }
+            }
+            // restore_board(backup, maze);
 
             if (ret_val.heuristic <= alpha)
             {
@@ -468,7 +503,6 @@ void print_maze(maze_struct* maze)
 int main()
 {
     // Generates the random seed
-    // srand(time(NULL));
     maze_struct maze;
     maze.turn = WHITE;
     run_game(&maze);
