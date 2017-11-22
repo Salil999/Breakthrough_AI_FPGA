@@ -438,7 +438,7 @@ void create_maze(maze_struct* maze)
         }
         else
         {
-            for (int j = 0; j < 8; ++j)
+            for (j = 0; j < 8; ++j)
             {
                 maze->array[i][j] = ' ';
             }
