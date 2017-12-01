@@ -1,12 +1,14 @@
 #include <unistd.h>
 #include "mini_max.h"
-#include "vec.h"
+// #include "vec.h"
 
 float get_random_number()
 {
-    int random_number = arc4random();
-    return fabs((random_number % 1000) / 1000.0);
-    // return min + rand() / (RAND_MAX / (max - min + 1) + 1);
+    // int random_number = arc4random();
+    // return fabs((random_number % 1000) / 1000.0);
+    int min = 0;
+    int max = 1;
+    return min + rand() / (RAND_MAX / (max - min + 1) + 1);
 }
 
 
@@ -51,7 +53,16 @@ void possible_actions(pos position, pos moves[3], maze_struct* maze)
     pos temp;
 
     x = position.x; y = position.y;
+    temp.x = -1; temp.y = -1;
     arr_index = 0;
+    if (!in_bounds(position))
+    {
+        while (arr_index < 3)
+        {
+            moves[arr_index++] = temp;
+        }
+        return;
+    }
     color = maze->array[x][y];
 
     if (color == 'W')
