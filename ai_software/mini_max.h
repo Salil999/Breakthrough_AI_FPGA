@@ -58,8 +58,9 @@ int in_bounds(pos position);
 void possible_actions(pos position, pos moves[3], maze_struct* maze);
 void save_board(char** backup, maze_struct* maze);
 void restore_board(char** backup, maze_struct* maze);
-float get_random_number();
+float get_random_number(int min, int max);
 void print_pos_array(pos* arr);
 void find_and_remove(pos pieces[16], pos item, int len);
+void check_win(maze_struct* maze);
 
 #endif
