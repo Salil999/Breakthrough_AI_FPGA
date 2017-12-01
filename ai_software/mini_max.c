@@ -163,7 +163,8 @@ int utility(maze_struct* maze)
     }
 
     // based on the heuristic chosen, return the value for THAT heuristic
-    return defensive_heuristic(own_pieces);
+    // return defensive_heuristic(own_pieces);
+    return offensive_heuristic(opponent_pieces);
 }
 
 
@@ -191,7 +192,7 @@ float defensive_heuristic(int own_pieces)
 }
 
 
-alpha_beta alpha_beta_max(int depth, pos piece, int alpha, int beta, maze_struct* maze)
+alpha_beta alpha_beta_max(int depth, int alpha, int beta, maze_struct* maze)
 {
     alpha_beta ret_val;
     pos base_position;
@@ -282,7 +283,7 @@ alpha_beta alpha_beta_max(int depth, pos piece, int alpha, int beta, maze_struct
             // print_pos_array(possible_moves);
             // printf("alpha: %d\n", alpha);
             // printf("beta: %d\n", beta);
-            temp = alpha_beta_min(depth + 1, pieces[i], alpha, beta, maze);
+            temp = alpha_beta_min(depth + 1, alpha, beta, maze);
 
             if (temp.heuristic > ret_val.heuristic)
             {
@@ -311,7 +312,7 @@ alpha_beta alpha_beta_max(int depth, pos piece, int alpha, int beta, maze_struct
 }
 
 
-alpha_beta alpha_beta_min(int depth, pos piece, int alpha, int beta, maze_struct* maze)
+alpha_beta alpha_beta_min(int depth, int alpha, int beta, maze_struct* maze)
 {
     // char** backup;
 
@@ -402,7 +403,7 @@ alpha_beta alpha_beta_min(int depth, pos piece, int alpha, int beta, maze_struct
             // printf("alpha: %d\n", alpha);
             // printf("beta: %d\n", beta);
 
-            temp = alpha_beta_max(depth + 1, pieces[i], alpha, beta, maze);
+            temp = alpha_beta_max(depth + 1, alpha, beta, maze);
 
             if (temp.heuristic < ret_val.heuristic)
             {
@@ -456,23 +457,18 @@ void run_game(maze_struct* maze)
         pos position;
         if (maze->turn % 2 == WHITE)
         {
-            value = alpha_beta_max(0, position, -INFINITY, INFINITY, maze);
+            value = alpha_beta_max(0, -INFINITY, INFINITY, maze);
         }
         else
         {
-            printf("Entered black alpha_beta_min\n");
-            value = alpha_beta_min(0, position, INFINITY, -INFINITY, maze);
+            value = alpha_beta_min(0, INFINITY, -INFINITY, maze);
         }
-
-        if (maze->turn % 2 == BLACK)
-        {
-            printf("Current: (%d, %d)\nMove: (%d, %d)\nCurrent-Character: %c\nMove-Character: %c\n",
-                   value.current.x, value.current.y,
-                   value.move.x, value.move.y,
-                   maze->array[value.current.x][value.current.y],
-                   maze->array[value.move.x][value.move.y]
-                  );
-        }
+        printf("Current: (%d, %d)\nMove: (%d, %d)\nCurrent-Character: %c\nMove-Character: %c\n",
+               value.current.x, value.current.y,
+               value.move.x, value.move.y,
+               maze->array[value.current.x][value.current.y],
+               maze->array[value.move.x][value.move.y]
+              );
 
         // curr -> current
         // nxt -> move
@@ -487,7 +483,6 @@ void run_game(maze_struct* maze)
             }
             else
             {
-                printf("Entered black find_and_remove\n");
                 find_and_remove(maze->white_pieces, value.move, maze->white_pieces_length);
                 maze->white_pieces_length--;
                 // remove the "value" position piece from the white pieces
@@ -496,15 +491,16 @@ void run_game(maze_struct* maze)
         if (maze->turn % 2 == WHITE)
         {
             find_and_remove(maze->white_pieces, value.current, maze->white_pieces_length);
-            maze->white_pieces[maze->white_pieces_length++] = value.move;
+            maze->white_pieces[maze->white_pieces_length - 1] = value.move;
+            maze->white_pieces_length++;
             // remove value.current from white
             // add value.next to white
         }
         else
         {
-            printf("Entered black find_and_remove\n");
             find_and_remove(maze->black_pieces, value.current, maze->black_pieces_length);
-            maze->black_pieces[maze->black_pieces_length++] = value.move;
+            maze->black_pieces[maze->black_pieces_length - 1] = value.move;
+            maze->black_pieces_length++;
             // remove value.current from black
             // add value.next to black
         }
@@ -514,7 +510,7 @@ void run_game(maze_struct* maze)
         printf("%d\n\n", maze->turn);
         print_maze(maze);
 
-        sleep(2);
+        sleep(1);
     }
 }
 
@@ -582,6 +578,8 @@ void create_maze(maze_struct* maze)
     // Sets the length of each of the white and black pieces arrays
     maze->white_pieces_length = 16;
     maze->black_pieces_length = 16;
+
+    maze->turn = 0;
 }
 
 
