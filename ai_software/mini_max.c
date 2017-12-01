@@ -1,11 +1,12 @@
+#include <unistd.h>
 #include "mini_max.h"
 #include "vec.h"
-
 
 float get_random_number()
 {
     int random_number = arc4random();
     return fabs((random_number % 1000) / 1000.0);
+    // return min + rand() / (RAND_MAX / (max - min + 1) + 1);
 }
 
 
@@ -49,7 +50,8 @@ void possible_actions(pos position, pos moves[3], maze_struct* maze)
     char color;
     pos temp;
 
-    x = position.x; y = position.y; arr_index = 0;
+    x = position.x; y = position.y;
+    arr_index = 0;
     color = maze->array[x][y];
 
     if (color == 'W')
@@ -59,14 +61,20 @@ void possible_actions(pos position, pos moves[3], maze_struct* maze)
             currX = x + 1;
             currY = y + k;
             temp.x = currX; temp.y = currY;
-            if (in_bounds(temp) == FALSE) continue;
-            if (maze->array[currX][currY] == ' ' || maze->array[currX][currY] == 'B')
+            if (!in_bounds(temp))
+            {
+                // printf("NOT IN BOUNDS: (%d, %d)\n", temp.x, temp.y);
+                continue;
+            }
+            if (maze->array[currX][currY] == '_' || maze->array[currX][currY] == 'B')
             {
                 if (k == 0 && maze->array[currX][currY] == 'B')
                 {
+                    // do nothing
                 }
                 else
                 {
+                    // printf("Adding: (%d, %d)\n", temp.x, temp.y);
                     moves[arr_index++] = temp;
                 }
             }
@@ -79,14 +87,20 @@ void possible_actions(pos position, pos moves[3], maze_struct* maze)
             currX = x - 1;
             currY = y + k;
             temp.x = currX; temp.y = currY;
-            if (in_bounds(temp) == FALSE) continue;
-            if (maze->array[currX][currY] == ' ' || maze->array[currX][currY] == 'W')
+            if (!in_bounds(temp))
+            {
+                // printf("NOT IN BOUNDS: (%d, %d)\n", temp.x, temp.y);
+                continue;
+            }
+            if (maze->array[currX][currY] == '_' || maze->array[currX][currY] == 'W')
             {
                 if (k == 0 && maze->array[currX][currY] == 'W')
                 {
+                    // do nothing
                 }
                 else
                 {
+                    // printf("Adding: (%d, %d)\n", temp.x, temp.y);
                     moves[arr_index++] = temp;
                 }
             }
@@ -135,13 +149,17 @@ int utility(maze_struct* maze)
     int own_pieces, opponent_pieces;
     if (maze->turn % 2 == WHITE)
     {
-        own_pieces = count_alive_pieces(maze->white_pieces);
-        opponent_pieces = count_alive_pieces(maze->black_pieces);
+        // own_pieces = count_alive_pieces(maze->white_pieces);
+        // opponent_pieces = count_alive_pieces(maze->black_pieces);
+        own_pieces = maze->white_pieces_length;
+        opponent_pieces = maze->black_pieces_length;
     }
     else
     {
-        opponent_pieces = count_alive_pieces(maze->white_pieces);
-        own_pieces = count_alive_pieces(maze->black_pieces);
+        opponent_pieces = maze->white_pieces_length;
+        own_pieces = maze->black_pieces_length;
+        // opponent_pieces = count_alive_pieces(maze->white_pieces);
+        // own_pieces = count_alive_pieces(maze->black_pieces);
     }
 
     // based on the heuristic chosen, return the value for THAT heuristic
@@ -156,6 +174,16 @@ float offensive_heuristic(int opponent_pieces)
 }
 
 
+void print_pos_array(pos* arr)
+{
+    int i;
+    for (i = 0; i < 3; ++i)
+    {
+        printf("\t(%d, %d)\n", arr[i].x, arr[i].y);
+    }
+}
+
+
 // a defensive heuristic that AI will use
 float defensive_heuristic(int own_pieces)
 {
@@ -165,22 +193,32 @@ float defensive_heuristic(int own_pieces)
 
 alpha_beta alpha_beta_max(int depth, pos piece, int alpha, int beta, maze_struct* maze)
 {
-    int i, j, k, l;
-    int pieces_length;
-    pos move;
-    pos* pieces;
-    pos possible_moves[3];
-    // char** backup;
-    char backup[8][8];
+    alpha_beta ret_val;
+    pos base_position;
+    base_position.x = 0; base_position.y = 0;
+    ret_val.current = base_position;
+    ret_val.move = base_position;
 
-    alpha_beta ret_val, temp;
-    pos base_position; base_position.x = 0; base_position.y = 0;
-    ret_val.current = base_position; ret_val.move = base_position;
 
     if (depth > MAX_DEPTH)
     {
         ret_val.heuristic = utility(maze);
         return ret_val;
+    }
+
+    int i, j, k, l;
+
+    int pieces_length;
+    pos* pieces = NULL;
+
+    pos possible_moves[3];
+    pos move;
+    move.x = -999;
+    move.y = -999;
+
+    for (i = 0; i < 3; ++i)
+    {
+        possible_moves[i] = move;
     }
 
     ret_val.heuristic = -INFINITY;
@@ -212,13 +250,23 @@ alpha_beta alpha_beta_max(int depth, pos piece, int alpha, int beta, maze_struct
     }
 
 
+    // char** backup;
+    char backup[8][8];
     for (i = 0; i < pieces_length; ++i)
     {
         possible_actions(pieces[i], possible_moves, maze);
+        // printf("current piece: (%d, %d), %c\n", pieces[i].x, pieces[i].y, maze->array[pieces[i].x][pieces[i].y]);
+        // printf("possible moves:\n");
+        // print_pos_array(possible_moves);
         for (j = 0; j < 3; ++j)
         {
+            alpha_beta temp;
             move = possible_moves[j];
 
+            if (move.x < 0)
+            {
+                continue;
+            }
             // backup the current game state
             for (k = 0; k < 8; ++k)
             {
@@ -230,12 +278,17 @@ alpha_beta alpha_beta_max(int depth, pos piece, int alpha, int beta, maze_struct
             // save_board(backup, maze);
 
             // recurse
+            // printf("depth + 1: %d\n", depth + 1);
+            // print_pos_array(possible_moves);
+            // printf("alpha: %d\n", alpha);
+            // printf("beta: %d\n", beta);
             temp = alpha_beta_min(depth + 1, pieces[i], alpha, beta, maze);
 
             if (temp.heuristic > ret_val.heuristic)
             {
                 ret_val.heuristic = temp.heuristic;
-                ret_val.current = pieces[i]; ret_val.move = possible_moves[j];
+                ret_val.current = pieces[i];
+                ret_val.move = possible_moves[j];
             }
 
             for (k = 0; k < 8; ++k)
@@ -245,9 +298,6 @@ alpha_beta alpha_beta_max(int depth, pos piece, int alpha, int beta, maze_struct
                     maze->array[k][l] = backup[k][l];
                 }
             }
-            // restore the original game state
-
-            // restore_board(backup, maze);
 
             if (ret_val.heuristic >= beta)
             {
@@ -263,22 +313,33 @@ alpha_beta alpha_beta_max(int depth, pos piece, int alpha, int beta, maze_struct
 
 alpha_beta alpha_beta_min(int depth, pos piece, int alpha, int beta, maze_struct* maze)
 {
-    int i, j, k, l;
-    int pieces_length;
-    pos move;
-    pos* pieces;
-    pos possible_moves[3];
     // char** backup;
-    char backup[8][8];
 
-    alpha_beta ret_val, temp;
-    pos base_position; base_position.x = 0; base_position.y = 0;
-    ret_val.current = base_position; ret_val.move = base_position;
+    alpha_beta ret_val;
+    pos base_position;
+    base_position.x = 0; base_position.y = 0;
+    ret_val.current = base_position;
+    ret_val.move = base_position;
 
     if (depth > MAX_DEPTH)
     {
         ret_val.heuristic = utility(maze);
         return ret_val;
+    }
+
+    int i, j, k, l;
+
+    int pieces_length;
+    pos* pieces = NULL;
+
+    pos possible_moves[3];
+    pos move;
+    move.x = -999;
+    move.y = -999;
+
+    for (i = 0; i < 3; ++i)
+    {
+        possible_moves[i] = move;
     }
 
     ret_val.heuristic = INFINITY;
@@ -310,13 +371,22 @@ alpha_beta alpha_beta_min(int depth, pos piece, int alpha, int beta, maze_struct
     }
 
 
+    char backup[8][8];
     for (i = 0; i < pieces_length; ++i)
     {
         possible_actions(pieces[i], possible_moves, maze);
+        // printf("current piece: (%d, %d), %c\n", pieces[i].x, pieces[i].y, maze->array[pieces[i].x][pieces[i].y]);
+        // printf("possible moves:\n");
+        // print_pos_array(possible_moves);
         for (j = 0; j < 3; ++j)
         {
+            alpha_beta temp;
             move = possible_moves[j];
 
+            if (move.x < 0)
+            {
+                continue;
+            }
             // save the current game state
             for (k = 0; k < 8; ++k)
             {
@@ -328,12 +398,17 @@ alpha_beta alpha_beta_min(int depth, pos piece, int alpha, int beta, maze_struct
             // save_board(backup, maze);
 
             // recurse
+            // printf("depth + 1: %d\n", depth + 1);
+            // printf("alpha: %d\n", alpha);
+            // printf("beta: %d\n", beta);
+
             temp = alpha_beta_max(depth + 1, pieces[i], alpha, beta, maze);
 
             if (temp.heuristic < ret_val.heuristic)
             {
                 ret_val.heuristic = temp.heuristic;
-                ret_val.current = pieces[i]; ret_val.move = possible_moves[j];
+                ret_val.current = pieces[i];
+                ret_val.move = possible_moves[j];
             }
 
             // restore the original game state
@@ -358,48 +433,88 @@ alpha_beta alpha_beta_min(int depth, pos piece, int alpha, int beta, maze_struct
 }
 
 
+void find_and_remove(pos pieces[16], pos item, int len)
+{
+    int i;
+    for (i = 0; i < len; ++i)
+    {
+        if (pieces[i].x == item.x && pieces[i].y == item.y)
+        {
+            break;
+        }
+    }
+    pieces[i] = pieces[len - 1];
+}
+
+
 // infinite loop that will handle all game logic
 void run_game(maze_struct* maze)
 {
-    alpha_beta value;
-    pos position;
     while (1)
     {
-        print_maze(maze);
+        alpha_beta value;
+        pos position;
         if (maze->turn % 2 == WHITE)
         {
             value = alpha_beta_max(0, position, -INFINITY, INFINITY, maze);
         }
         else
         {
+            printf("Entered black alpha_beta_min\n");
             value = alpha_beta_min(0, position, INFINITY, -INFINITY, maze);
         }
+
+        if (maze->turn % 2 == BLACK)
+        {
+            printf("Current: (%d, %d)\nMove: (%d, %d)\nCurrent-Character: %c\nMove-Character: %c\n",
+                   value.current.x, value.current.y,
+                   value.move.x, value.move.y,
+                   maze->array[value.current.x][value.current.y],
+                   maze->array[value.move.x][value.move.y]
+                  );
+        }
+
+        // curr -> current
+        // nxt -> move
+
         if (maze->array[value.move.x][value.move.y] == 'B' || maze->array[value.move.x][value.move.y] == 'W')
         {
             if (maze->turn % 2 == WHITE)
             {
+                find_and_remove(maze->black_pieces, value.move, maze->black_pieces_length);
+                maze->black_pieces_length--;
                 // remove the "value" position piece from the black pieces
             }
             else
             {
+                printf("Entered black find_and_remove\n");
+                find_and_remove(maze->white_pieces, value.move, maze->white_pieces_length);
+                maze->white_pieces_length--;
                 // remove the "value" position piece from the white pieces
             }
         }
         if (maze->turn % 2 == WHITE)
         {
+            find_and_remove(maze->white_pieces, value.current, maze->white_pieces_length);
+            maze->white_pieces[maze->white_pieces_length++] = value.move;
             // remove value.current from white
             // add value.next to white
         }
         else
         {
+            printf("Entered black find_and_remove\n");
+            find_and_remove(maze->black_pieces, value.current, maze->black_pieces_length);
+            maze->black_pieces[maze->black_pieces_length++] = value.move;
             // remove value.current from black
             // add value.next to black
         }
-
         maze->array[value.move.x][value.move.y] = maze->array[value.current.x][value.current.y];
-        maze->array[value.current.x][value.current.y] = ' ';
+        maze->array[value.current.x][value.current.y] = '_';
         maze->turn++;
+        printf("%d\n\n", maze->turn);
+        print_maze(maze);
 
+        sleep(2);
     }
 }
 
@@ -440,7 +555,7 @@ void create_maze(maze_struct* maze)
         {
             for (j = 0; j < 8; ++j)
             {
-                maze->array[i][j] = ' ';
+                maze->array[i][j] = '_';
             }
         }
     }
@@ -496,6 +611,7 @@ void print_maze(maze_struct* maze)
         }
         printf("\n");
     }
+    printf("\n");
 }
 
 
@@ -505,8 +621,8 @@ int main()
     // Generates the random seed
     maze_struct maze;
     maze.turn = WHITE;
-    run_game(&maze);
     create_maze(&maze);
+    run_game(&maze);
     print_maze(&maze);
     destroy_maze(maze.array);
 

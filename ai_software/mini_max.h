@@ -10,9 +10,9 @@
 
 #define WHITE 0
 #define BLACK 1
-#define MAX_DEPTH 2
+#define MAX_DEPTH 3
 #define TRUE 1
-#define FALSE -1
+#define FALSE 0
 
 // struct that acts as a position
 struct pos
@@ -59,5 +59,7 @@ void possible_actions(pos position, pos moves[3], maze_struct* maze);
 void save_board(char** backup, maze_struct* maze);
 void restore_board(char** backup, maze_struct* maze);
 float get_random_number();
+void print_pos_array(pos* arr);
+void find_and_remove(pos pieces[16], pos item, int len);
 
 #endif
