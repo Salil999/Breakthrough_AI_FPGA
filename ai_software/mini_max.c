@@ -1,10 +1,9 @@
 #include <unistd.h>
 #include "mini_max.h"
-// #include "vec.h"
 
-float get_random_number(int min, int max)
+float get_random_number()
 {
-    return min + rand() / (RAND_MAX / (max - min + 1) + 1);
+    return rand() / (float)RAND_MAX;
 }
 
 
@@ -37,7 +36,6 @@ void possible_actions(pos position, pos moves[3], maze_struct* maze)
             temp.x = currX; temp.y = currY;
             if (!in_bounds(temp))
             {
-                // printf("NOT IN BOUNDS: (%d, %d)\n", temp.x, temp.y);
                 continue;
             }
             if (maze->array[currX][currY] == '_' || maze->array[currX][currY] == 'B')
@@ -48,7 +46,6 @@ void possible_actions(pos position, pos moves[3], maze_struct* maze)
                 }
                 else
                 {
-                    // printf("Adding: (%d, %d)\n", temp.x, temp.y);
                     moves[arr_index++] = temp;
                 }
             }
@@ -101,38 +98,27 @@ int in_bounds(pos position)
 }
 
 
-int utility(maze_struct* maze)
+float utility(maze_struct* maze)
 {
-    int own_pieces, opponent_pieces, random;
     if (maze->turn % 2 == WHITE)
     {
-        own_pieces = maze->white_pieces_length;
-        opponent_pieces = maze->black_pieces_length;
+        // own_pieces = maze->white_pieces_length;
+        // opponent_pieces = maze->black_pieces_length;
+        return defensive_heuristic(maze->white_pieces_length);
     }
     else
     {
-        opponent_pieces = maze->white_pieces_length;
-        own_pieces = maze->black_pieces_length;
+        // opponent_pieces = maze->white_pieces_length;
+        // own_pieces = maze->black_pieces_length;
+        return offensive_heuristic(maze->black_pieces_length);
     }
-
-    random = get_random_number(0, 100);
-
-    if (random < 50)
-    {
-        return offensive_heuristic(opponent_pieces);
-    }
-    else
-    {
-        return defensive_heuristic(own_pieces);
-    }
-
 }
 
 
 // an offensive heuristic that AI will use
 float offensive_heuristic(int opponent_pieces)
 {
-    return 2 * (30 - opponent_pieces) + get_random_number(0, 1);
+    return 2.0 * (30.0 - (float)opponent_pieces) + get_random_number();
 }
 
 
@@ -149,7 +135,7 @@ void print_pos_array(pos* arr)
 // a defensive heuristic that AI will use
 float defensive_heuristic(int own_pieces)
 {
-    return 2 * own_pieces + get_random_number(0, 1);
+    return 2.0 * (float)own_pieces + get_random_number();
 }
 
 
@@ -420,9 +406,10 @@ void run_game(maze_struct* maze)
     {
         alpha_beta value;
         pos position;
+        float test;
         if (maze->turn % 2 == WHITE)
         {
-            value = alpha_beta_max(0, -INFINITY, INFINITY, maze);
+            value = alpha_beta_min(0, INFINITY, -INFINITY, maze);
         }
         else
         {
@@ -457,13 +444,11 @@ void run_game(maze_struct* maze)
         {
             find_and_remove(maze->white_pieces, value.current, maze->white_pieces_length);
             maze->white_pieces[maze->white_pieces_length - 1] = value.move;
-            // maze->white_pieces_length++;
         }
         else
         {
             find_and_remove(maze->black_pieces, value.current, maze->black_pieces_length);
             maze->black_pieces[maze->black_pieces_length - 1] = value.move;
-            // maze->black_pieces_length++;
         }
         maze->array[value.move.x][value.move.y] = maze->array[value.current.x][value.current.y];
         maze->array[value.current.x][value.current.y] = '_';
