@@ -10,7 +10,7 @@
 
 #define WHITE 0
 #define BLACK 1
-#define MAX_DEPTH 7
+#define MAX_DEPTH 5
 #define TRUE 1
 #define FALSE 0
 
@@ -48,8 +48,8 @@ void create_maze(maze_struct* maze);
 void destroy_maze(char** maze);
 void print_maze(maze_struct* maze);
 void run_game(maze_struct* maze);
-alpha_beta alpha_beta_max(int depth, int alpha, int beta, maze_struct* maze);
-alpha_beta alpha_beta_min(int depth, int alpha, int beta, maze_struct* maze);
+alpha_beta alpha_beta_max(int depth, float alpha, float beta, maze_struct* maze);
+alpha_beta alpha_beta_min(int depth, float alpha, float beta, maze_struct* maze);
 float defensive_heuristic(int own_pieces);
 float offensive_heuristic(int opponent_pieces);
 float utility(maze_struct* maze);
@@ -61,6 +61,6 @@ void restore_board(char** backup, maze_struct* maze);
 float get_random_number();
 void print_pos_array(pos* arr);
 void find_and_remove(pos pieces[16], pos item, int len);
-void check_win(maze_struct* maze);
+int check_win(maze_struct* maze);
 
 #endif

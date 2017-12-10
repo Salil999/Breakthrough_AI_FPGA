@@ -1,9 +1,9 @@
-#include <unistd.h>
+#include <float.h>
 #include "mini_max.h"
 
 float get_random_number()
 {
-    return rand() / (float)RAND_MAX;
+    return ((float)rand()) / (float)RAND_MAX;
 }
 
 
@@ -90,9 +90,7 @@ void possible_actions(pos position, pos moves[3], maze_struct* maze)
 
 int in_bounds(pos position)
 {
-    int x, y;
-    x = position.x; y = position.y;
-    if (x < 8 && x >= 0 && y < 8 && y >= 0)
+    if (position.x < 8 && position.x >= 0 && position.y < 8 && position.y >= 0)
         return TRUE;
     return FALSE;
 }
@@ -102,14 +100,10 @@ float utility(maze_struct* maze)
 {
     if (maze->turn % 2 == WHITE)
     {
-        // own_pieces = maze->white_pieces_length;
-        // opponent_pieces = maze->black_pieces_length;
         return defensive_heuristic(maze->white_pieces_length);
     }
     else
     {
-        // opponent_pieces = maze->white_pieces_length;
-        // own_pieces = maze->black_pieces_length;
         return offensive_heuristic(maze->black_pieces_length);
     }
 }
@@ -118,7 +112,7 @@ float utility(maze_struct* maze)
 // an offensive heuristic that AI will use
 float offensive_heuristic(int opponent_pieces)
 {
-    return 2.0 * (30.0 - (float)opponent_pieces) + get_random_number();
+    return (2.0 * (30.0 - (float)opponent_pieces)) + get_random_number();
 }
 
 
@@ -135,11 +129,11 @@ void print_pos_array(pos* arr)
 // a defensive heuristic that AI will use
 float defensive_heuristic(int own_pieces)
 {
-    return 2.0 * (float)own_pieces + get_random_number();
+    return (2.0 * (float)own_pieces) + get_random_number();
 }
 
 
-alpha_beta alpha_beta_max(int depth, int alpha, int beta, maze_struct* maze)
+alpha_beta alpha_beta_max(int depth, float alpha, float beta, maze_struct* maze)
 {
     alpha_beta ret_val, temp;
     pos base_position;
@@ -169,7 +163,7 @@ alpha_beta alpha_beta_max(int depth, int alpha, int beta, maze_struct* maze)
         possible_moves[i] = move;
     }
 
-    ret_val.heuristic = -INFINITY;
+    ret_val.heuristic = -FLT_MAX;
     if (maze->turn % 2 == WHITE)
     {
         if (depth % 2 == 0)
@@ -249,7 +243,7 @@ alpha_beta alpha_beta_max(int depth, int alpha, int beta, maze_struct* maze)
 }
 
 
-alpha_beta alpha_beta_min(int depth, int alpha, int beta, maze_struct* maze)
+alpha_beta alpha_beta_min(int depth, float alpha, float beta, maze_struct* maze)
 {
 
     alpha_beta ret_val, temp;
@@ -279,7 +273,7 @@ alpha_beta alpha_beta_min(int depth, int alpha, int beta, maze_struct* maze)
         possible_moves[i] = move;
     }
 
-    ret_val.heuristic = INFINITY;
+    ret_val.heuristic = FLT_MAX;
     if (maze->turn % 2 == WHITE)
     {
         if (depth % 2 == 0)
@@ -377,7 +371,7 @@ void find_and_remove(pos pieces[16], pos item, int len)
 }
 
 
-void check_win(maze_struct* maze)
+int check_win(maze_struct* maze)
 {
     int i;
     for (i = 0; i < 8; ++i)
@@ -387,14 +381,14 @@ void check_win(maze_struct* maze)
             printf("Black Won!\n");
             print_maze(maze);
             destroy_maze(maze->array);
-            exit(0);
+            return TRUE;
         }
         if (maze->array[7][i] == 'W')
         {
             printf("White Won!\n");
             print_maze(maze);
             destroy_maze(maze->array);
-            exit(0);
+            return TRUE;
         }
     }
 }
@@ -402,24 +396,24 @@ void check_win(maze_struct* maze)
 // infinite loop that will handle all game logic
 void run_game(maze_struct* maze)
 {
+    alpha_beta value;
+    pos position;
     while (1)
     {
-        alpha_beta value;
-        pos position;
-        float test;
         if (maze->turn % 2 == WHITE)
         {
-            value = alpha_beta_min(0, INFINITY, -INFINITY, maze);
+            value = alpha_beta_max(0, -FLT_MAX, FLT_MAX, maze);
         }
         else
         {
-            value = alpha_beta_min(0, INFINITY, -INFINITY, maze);
+            value = alpha_beta_max(0, -FLT_MAX, FLT_MAX, maze);
         }
-        printf("Current: (%d, %d)\nMove: (%d, %d)\nCurrent-Character: %c\nMove-Character: %c\n",
+        printf("Current: (%d, %d)\nMove: (%d, %d)\nCurrent-Character: %c\nMove-Character: %c\nHeuristic Value:%f\n",
                value.current.x, value.current.y,
                value.move.x, value.move.y,
                maze->array[value.current.x][value.current.y],
-               maze->array[value.move.x][value.move.y]
+               maze->array[value.move.x][value.move.y],
+               value.heuristic
               );
 
         // curr -> current
@@ -455,8 +449,10 @@ void run_game(maze_struct* maze)
         maze->turn++;
         printf("%d\n\n", maze->turn);
         print_maze(maze);
-        check_win(maze);
-        // sleep(1);
+        if (check_win(maze) == TRUE)
+        {
+            return;
+        }
     }
 }
 
